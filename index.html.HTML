@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C.B.F - نظام الإدارة المتكامل</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #0a0f1d;
+            --bg-card: #111827;
+            --text-color: #ffffff;
+            --accent-blue: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.4);
+        }
+        .light-mode {
+            --bg-main: #f3f4f6;
+            --bg-card: #ffffff;
+            --text-color: #111827;
+            --accent-blue: #1d4ed8;
+            --accent-glow: rgba(29, 78, 216, 0.1);
+        }
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+        .islamic-font { font-family: 'Amiri', serif; }
+        
+        #splash {
+            position: fixed; inset: 0; background: #000; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; transition: 0.8s;
+        }
+        .logo-cbf {
+            width: 140px; height: 140px; border-radius: 50%; background: var(--accent-blue);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 2.5rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 0 40px var(--accent-glow);
+            transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .marquee-wrapper {
+            background: var(--bg-card); border: 1px solid var(--accent-blue);
+            overflow: hidden; padding: 12px; border-radius: 12px; margin-top: 10px;
+        }
+        .marquee-txt {
+            display: inline-block; white-space: nowrap; animation: scroll-txt 20s linear infinite;
+            font-size: 1.2rem; font-weight: bold; color: var(--accent-blue);
+        }
+        @keyframes scroll-txt { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+
+        .nav-link { cursor: pointer; padding: 10px 15px; border-radius: 8px; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+        .active-nav { background: var(--accent-glow); border-bottom: 3px solid var(--accent-blue); }
+        .card-box { background: var(--bg-card); border: 1px solid #374151; padding: 20px; border-radius: 15px; transition: 0.3s; }
+        .card-box:hover { transform: translateY(-5px); border-color: var(--accent-blue); }
+        
+        .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--bg-card); color: var(--text-color); padding: 30px; border-radius: 20px; width: 100%; max-width: 650px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--accent-blue); }
+        .modal-bg.active { display: flex; }
+
+        .circle-item { width: 100px; height: 100px; border-radius: 50%; background: var(--accent-blue); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; animation: fadeIn 0.5s ease; text-align: center; padding: 5px; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        
+        input, select { background: #1f2937; border: 1px solid #374151; color: white; padding: 10px; border-radius: 8px; width: 100%; }
+        .light-mode input, .light-mode select { background: #fff; border: 1px solid #ddd; color: #000; }
+    </style>
+</head>
+<body class="dark-mode">
+
+    <!-- Splash Screen -->
+    <div id="splash">
+        <div class="logo-cbf" onclick="startApp()">C.B.F</div>
+        <div class="mt-6 text-2xl font-bold islamic-font text-white">مركز بداية مستقبل</div>
+    </div>
+
+    <!-- Header -->
+    <header id="header" class="fixed top-0 w-full bg-black/90 border-b border-blue-900 z-50 transform -translate-y-full transition-transform duration-700 p-3">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white">CBF</div>
+                <span class="font-bold islamic-font text-xl">بداية مستقبل</span>
+            </div>
+            <nav class="hidden lg:flex items-center gap-2">
+                <div class="nav-link active-nav" onclick="tab('home')"><i class="fas fa-home"></i> الرئيسية</div>
+                <div class="nav-link" onclick="tab('courses')"><i class="fas fa-graduation-cap"></i> الكورسات</div>
+                <div class="nav-link" onclick="tab('training')"><i class="fas fa-tools"></i> التدريب المهني</div>
+                <div class="nav-link" onclick="tab('staff')"><i class="fas fa-users-cog"></i> الموظفين</div>
+                <div class="nav-link" onclick="tab('finance')"><i class="fas fa-wallet"></i> المالية</div>
+                <div class="nav-link text-yellow-500" onclick="openM('moneyModal')"><i class="fas fa-hand-holding-dollar text-xl"></i></div>
+                <div class="nav-link" onclick="openM('settingsModal')"><i class="fas fa-cog"></i></div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto mt-28 p-4">
+        
+        <!-- Tab: Home -->
+        <section id="tab-home" class="tab-sec">
+            <div class="marquee-wrapper">
+                <div class="marquee-txt">مركز بداية مستقبل - THE CENTER OF BEGINNING FUTURE - نرحب بكم في نظام الإدارة الذكي</div>
+            </div>
+            <div class="mt-20 max-w-2xl mx-auto relative">
+                <input type="text" id="globalSearch" oninput="runGlobalSearch()" placeholder="بحث سريع برقم الطالب أو الاسم..." class="w-full bg-gray-900 border border-blue-800 p-5 pr-14 rounded-full outline-none focus:ring-2 ring-blue-600 text-white text-right">
+                <i class="fas fa-search absolute left-6 top-6 text-blue-500"></i>
+            </div>
+            <div id="searchResult" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- Tab: Courses -->
+        <section id="tab-courses" class="tab-sec hidden">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold">إدارة الكورسات</h2>
+                <button onclick="openM('addCourseStudentModal')" class="bg-blue-600 px-6 py-2 rounded-lg font-bold">إضافة طالب كورس</button>
+            </div>
+            <div id="courseCircles" class="flex flex-wrap gap-6 justify-center mb-10"></div>
+            <div id="courseList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- Tab: Training -->
+        <section id="tab-training" class="tab-sec hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div class="card-box text-center cursor-pointer border-red-900" onclick="setTrainingDept('الخدمات الصحية')">
+                    <i class="fas fa-heartbeat text-3xl text-red-500 mb-2"></i>
+                    <h3 class="font-bold">قسم الخدمات الصحية</h3>
+                </div>
+                <div class="card-box text-center cursor-pointer border-green-900" onclick="setTrainingDept('تكنولوجيا')">
+                    <i class="fas fa-laptop-code text-3xl text-green-500 mb-2"></i>
+                    <h3 class="font-bold">قسم التكنولوجيا</h3>
+                </div>
+                <div class="card-box text-center cursor-pointer border-yellow-900" onclick="setTrainingDept('مساحة وخرائط')">
+                    <i class="fas fa-map-marked-alt text-3xl text-yellow-500 mb-2"></i>
+                    <h3 class="font-bold">قسم المساحة والخرائط</h3>
+                </div>
+            </div>
+            
+            <div id="deptHeader" class="hidden mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-900 p-4 rounded-xl border border-blue-900">
+                    <h2 id="currentDeptTitle" class="text-xl font-bold text-blue-400"></h2>
+                    <div class="flex flex-wrap gap-2">
+                        <input type="text" id="deptSearch" oninput="renderTraining()" placeholder="بحث بالاسم..." class="bg-black border border-gray-700 p-2 rounded text-sm w-40">
+                        <button onclick="openM('addTrainingModal')" class="bg-blue-600 px-4 py-2 rounded text-sm font-bold">إضافة طالب</button>
+                        <button onclick="exportDeptPDF()" class="bg-red-600 px-4 py-2 rounded text-sm font-bold">تقرير القسم PDF</button>
+                        <select id="levelFilter" onchange="renderTraining()" class="bg-gray-800 text-white p-2 rounded text-sm border-blue-900 w-32">
+                            <option value="all">كل الفرق</option>
+                            <option value="الأولى">الفرقة الأولى</option>
+                            <option value="الثانية">الفرقة الثانية</option>
+                        </select>
+                        <button onclick="exportLevelPDF()" class="bg-orange-600 px-4 py-2 rounded text-sm font-bold">تقرير الفرقة PDF</button>
+                    </div>
+                </div>
+                <div id="trainingStudentsList" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6"></div>
+            </div>
+        </section>
+
+        <!-- Tab: Staff -->
+        <section id="tab-staff" class="tab-sec hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">شؤون الموظفين</h2>
+                <div class="flex gap-2">
+                    <button onclick="exportStaffReport()" class="bg-red-600 px-4 py-2 rounded-lg font-bold">تقرير الموظفين PDF</button>
+                    <button onclick="openM('addStaffModal')" class="bg-blue-600 px-6 py-2 rounded-lg font-bold">إضافة موظف</button>
+                </div>
+            </div>
+            <div id="staffList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- Tab: Finance -->
+        <section id="tab-finance" class="tab-sec hidden">
+            <div id="finAuth" class="max-w-md mx-auto card-box text-center">
+                <i class="fas fa-user-shield text-5xl mb-4 text-blue-500"></i>
+                <h2 class="text-xl font-bold mb-4">بوابة الإدارة المالية</h2>
+                <input type="email" id="finEmail" placeholder="البريد الإلكتروني" class="w-full p-3 mb-2 rounded bg-gray-800 border border-blue-900 text-white">
+                <input type="password" id="finPass" placeholder="كلمة المرور" class="w-full p-3 mb-4 rounded bg-gray-800 border border-blue-900 text-white">
+                <button onclick="loginFin()" class="w-full bg-blue-600 p-3 rounded font-bold">تسجيل الدخول</button>
+            </div>
+            <div id="finPanel" class="hidden">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="card-box text-center cursor-pointer hover:bg-blue-900" onclick="showFin('daily')">السجل اليومي</div>
+                    <div class="card-box text-center cursor-pointer hover:bg-blue-900" onclick="showFin('monthly')">السجل الشهري</div>
+                    <div class="card-box text-center cursor-pointer hover:bg-blue-900" onclick="showFin('yearly')">السجل السنوي</div>
+                    <div class="card-box text-center cursor-pointer bg-yellow-900/20 border-yellow-600" onclick="showFin('vault')">الخزنة العامة</div>
+                </div>
+                <div id="finView" class="card-box">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 id="finTitle" class="text-xl font-bold text-blue-400"></h3>
+                        <button onclick="exportFinPDF()" class="bg-red-600 px-4 py-1 rounded text-sm font-bold">تحميل PDF</button>
+                    </div>
+                    <div id="finRecords" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modals -->
+    <div id="moneyModal" class="modal-bg">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4 border-b pb-2 text-blue-600 text-right">تسجيل حركة مالية جديدة</h3>
+            <div class="grid grid-cols-1 gap-4">
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="m_type" class="p-2 border rounded font-bold">
+                        <option value="وارد">وارد (+)</option>
+                        <option value="صادر">صادر (-)</option>
+                    </select>
+                    <input type="number" id="m_amount" placeholder="المبلغ" class="p-2 border rounded">
+                </div>
+                <input type="text" id="m_reason" placeholder="السبب (اشتراك، صيانة، أدوات..)" class="p-2 border rounded">
+                <input type="text" id="m_user" placeholder="اسم المسجل" class="p-2 border rounded">
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="m_dept" class="p-2 border rounded">
+                        <option value="عام">مركز عام</option>
+                        <option value="الخدمات الصحية">قسم الصحية</option>
+                        <option value="تكنولوجيا">قسم التكنولوجيا</option>
+                        <option value="مساحة وخرائط">قسم المساحة</option>
+                        <option value="كورس">كورس خاص</option>
+                    </select>
+                    <select id="m_level" class="p-2 border rounded">
+                        <option value="عام">بدون فرقة (عام)</option>
+                        <option value="الأولى">الفرقة الأولى</option>
+                        <option value="الثانية">الفرقة الثانية</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeM('moneyModal')" class="p-2 text-gray-500">إلغاء</button>
+                <button onclick="saveFinance()" class="bg-green-600 text-white px-6 py-2 rounded font-bold">تأكيد العملية</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addCourseStudentModal" class="modal-bg">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4 border-b pb-2">إضافة طالب كورس جديد</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" id="c_name" placeholder="اسم الطالب">
+                <input type="text" id="c_course" placeholder="اسم الكورس">
+                <input type="text" id="c_phone" placeholder="رقم ولي الأمر">
+                <input type="number" id="c_total" placeholder="المبلغ الكلي (الاشتراك)">
+                <input type="number" id="c_paid" placeholder="المقدم (المدفوع حالياً)">
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeM('addCourseStudentModal')" class="p-2 text-gray-500">إلغاء</button>
+                <button onclick="saveStudent('course')" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">حفظ البيانات</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addTrainingModal" class="modal-bg">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4 border-b pb-2">إضافة طالب للتدريب المهني</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" id="t_name" placeholder="اسم الطالب">
+                <select id="t_level">
+                    <option value="الأولى">الفرقة الأولى</option>
+                    <option value="الثانية">الفرقة الثانية</option>
+                </select>
+                <input type="text" id="t_phone" placeholder="رقم ولي الأمر">
+                <input type="text" id="t_time" placeholder="الموعد">
+                <input type="number" id="t_total" placeholder="اشتراك الشهر">
+                <input type="number" id="t_paid" placeholder="المقدم">
+            </div>
+            <div class="flex flex-col gap-2 mt-6">
+                <button onclick="saveStudent('training')" class="w-full bg-blue-600 text-white p-3 rounded font-bold">حفظ في القسم</button>
+                <button onclick="closeM('addTrainingModal')" class="w-full text-gray-400">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="studentDetailModal" class="modal-bg">
+        <div class="modal-content max-w-4xl">
+            <div class="flex justify-between items-start border-b pb-4 mb-4">
+                <div>
+                    <h2 id="detName" class="text-2xl font-bold text-blue-500"></h2>
+                    <p id="detSub" class="text-gray-400"></p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="deleteS()" class="text-red-500 text-xl p-2 bg-red-500/10 rounded-lg"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="space-y-4">
+                    <button onclick="markAttend()" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold">تسجيل حضور</button>
+                    <button onclick="payMonthlySub()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold">دفع اشتراك شهري</button>
+                    <button onclick="openExamTab()" class="w-full bg-purple-600 text-white p-3 rounded-lg font-bold">الامتحانات</button>
+                    <div class="p-4 bg-gray-800 rounded-lg text-sm text-right border border-gray-700 space-y-2">
+                        <p class="font-bold border-b border-gray-600 pb-1">البيانات المالية</p>
+                        <p>الإجمالي: <span id="finTotal" class="text-white"></span> ج.م</p>
+                        <p>المدفوع: <span id="finPaid" class="text-green-400"></span> ج.م</p>
+                        <p>المتبقي: <span id="finRest" class="text-red-400"></span> ج.م</p>
+                        <hr class="opacity-20">
+                        <p>تاريخ التسجيل: <span id="regDate" class="text-blue-400"></span></p>
+                        <p>رقم ولي الأمر: <span id="pPhone" class="text-blue-400"></span></p>
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <h4 class="font-bold mb-2">سجل الطالب الشامل</h4>
+                    <div id="detLogs" class="bg-black/40 p-4 rounded-xl h-64 overflow-y-auto text-sm space-y-2 text-right border border-gray-700"></div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-between">
+                <button onclick="exportStudentPDF()" class="bg-red-800 text-white px-4 py-2 rounded">تحميل تقرير الطالب PDF</button>
+                <button onclick="closeM('studentDetailModal')" class="bg-gray-200 text-black px-6 py-2 rounded font-bold">خروج</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addStaffModal" class="modal-bg">
+        <div class="modal-content">
+            <h3 class="font-bold mb-4">إضافة موظف جديد</h3>
+            <input type="text" id="st_name" placeholder="اسم الموظف" class="w-full p-2 mb-2 border rounded">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-xs">وقت الحضور</label>
+                    <input type="time" id="st_in" class="w-full p-2 mb-2 border rounded">
+                </div>
+                <div>
+                    <label class="text-xs">وقت الانصراف</label>
+                    <input type="time" id="st_out" class="w-full p-2 mb-2 border rounded">
+                </div>
+            </div>
+            <button onclick="saveStaff()" class="w-full bg-blue-600 text-white p-2 rounded mt-4 font-bold">حفظ الموظف</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal Updated with Editable Prices -->
+    <div id="settingsModal" class="modal-bg">
+        <div class="modal-content max-w-2xl">
+            <h3 class="text-xl font-bold mb-6 border-b pb-2 flex items-center gap-2">
+                <i class="fas fa-cog text-blue-500"></i> الإعدادات المتقدمة
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="card-box p-4 border-blue-900/30">
+                        <h4 class="font-bold mb-3 text-sm text-blue-400">المظهر والأمان</h4>
+                        <button onclick="toggleMode()" class="w-full bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white p-2 mb-3 rounded-lg text-sm transition font-bold">تبديل الوضع (ليل / نهار)</button>
+                        <hr class="opacity-10 my-3">
+                        <label class="text-xs block mb-1">تغيير كلمة مرور المالية</label>
+                        <input type="password" id="newFinPass" placeholder="كلمة المرور الجديدة" class="mb-2 text-sm">
+                        <button onclick="changeFinPass()" class="w-full bg-green-600 text-white p-2 rounded-lg text-sm font-bold">حفظ كلمة المرور</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="card-box p-4 border-blue-900/30 overflow-y-auto max-h-[400px]">
+                        <h4 class="font-bold mb-3 text-sm text-blue-400">تعديل قائمة الأسعار يدوياً</h4>
+                        
+                        <div class="mb-4">
+                            <p class="text-xs font-bold text-gray-500 mb-1">الكورسات</p>
+                            <div class="text-[11px] space-y-1">
+                                <div class="flex items-center gap-1 mb-1">
+                                    <span class="w-20">إنجليزي:</span>
+                                    <input type="number" id="price_eng" class="p-1 h-6 text-[10px]" onchange="savePriceList()">
+                                </div>
+                                <div class="flex items-center gap-1 mb-1">
+                                    <span class="w-20">ICDL:</span>
+                                    <input type="number" id="price_icdl" class="p-1 h-6 text-[10px]" onchange="savePriceList()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <p class="text-xs font-bold text-gray-500 mb-1">التدريب المهني (شهري)</p>
+                            <div class="text-[11px] space-y-1">
+                                <div class="flex items-center gap-1 mb-1">
+                                    <span class="w-24 text-red-400">صحية:</span>
+                                    <input type="number" id="price_health" class="p-1 h-6 text-[10px]" onchange="savePriceList()">
+                                </div>
+                                <div class="flex items-center gap-1 mb-1">
+                                    <span class="w-24 text-green-400">تكنولوجيا:</span>
+                                    <input type="number" id="price_tech" class="p-1 h-6 text-[10px]" onchange="savePriceList()">
+                                </div>
+                                <div class="flex items-center gap-1 mb-1">
+                                    <span class="w-24 text-yellow-400">مساحة:</span>
+                                    <input type="number" id="price_map" class="p-1 h-6 text-[10px]" onchange="savePriceList()">
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-yellow-500 italic mt-2">* يتم الحفظ تلقائياً عند تغيير السعر.</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="closeM('settingsModal')" class="w-full mt-6 bg-gray-200 text-black p-3 rounded-xl font-bold">إغلاق الإعدادات</button>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let students = JSON.parse(localStorage.getItem('cbf_s')) || [];
+        let staff = JSON.parse(localStorage.getItem('cbf_st')) || [];
+        let finance = JSON.parse(localStorage.getItem('cbf_f')) || [];
+        let finPassword = localStorage.getItem('cbf_fin_pass') || "123";
+        let priceList = JSON.parse(localStorage.getItem('cbf_prices')) || {
+            eng: 400, icdl: 600, health: 350, tech: 400, map: 450
+        };
+        let currentDept = '';
+        let activeSID = null;
+        let finViewType = 'daily';
+
+        // Helpers
+        const val = id => document.getElementById(id).value;
+        const num = id => Number(val(id));
+        const sync = () => {
+            localStorage.setItem('cbf_s', JSON.stringify(students));
+            localStorage.setItem('cbf_st', JSON.stringify(staff));
+            localStorage.setItem('cbf_f', JSON.stringify(finance));
+            localStorage.setItem('cbf_fin_pass', finPassword);
+            localStorage.setItem('cbf_prices', JSON.stringify(priceList));
+        };
+
+        // Core App Functions
+        function startApp() {
+            const sp = document.getElementById('splash');
+            sp.querySelector('.logo-cbf').style.transform = "translate(40vw, -42vh) scale(0.35)";
+            sp.style.opacity = "0";
+            setTimeout(() => { 
+                sp.style.display = "none"; 
+                document.getElementById('header').style.transform = "translateY(0)"; 
+            }, 800);
+            loadPricesToUI();
+            renderAll();
+        }
+
+        function loadPricesToUI() {
+            document.getElementById('price_eng').value = priceList.eng;
+            document.getElementById('price_icdl').value = priceList.icdl;
+            document.getElementById('price_health').value = priceList.health;
+            document.getElementById('price_tech').value = priceList.tech;
+            document.getElementById('price_map').value = priceList.map;
+        }
+
+        function savePriceList() {
+            priceList.eng = num('price_eng');
+            priceList.icdl = num('price_icdl');
+            priceList.health = num('price_health');
+            priceList.tech = num('price_tech');
+            priceList.map = num('price_map');
+            sync();
+        }
+
+        function tab(id) {
+            document.querySelectorAll('.tab-sec').forEach(s => s.classList.add('hidden'));
+            document.getElementById('tab-' + id).classList.remove('hidden');
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-nav'));
+            if(event) event.currentTarget.classList.add('active-nav');
+        }
+
+        function openM(id) { document.getElementById(id).classList.add('active'); }
+        function closeM(id) { document.getElementById(id).classList.remove('active'); }
+
+        // Master Render
+        function renderAll() {
+            renderCourses();
+            renderTraining();
+            renderStaff();
+        }
+
+        // Student Logic
+        function saveStudent(type) {
+            let s = { id: Date.now(), logs: [], attendance: 0, exams: [] };
+            if(type === 'course') {
+                if(!val('c_name') || !val('c_course')) return alert("يرجى ملء البيانات");
+                s = { ...s, type: 'course', name: val('c_name'), course: val('c_course'), phone: val('c_phone'), total: num('c_total'), paid: num('c_paid') };
+            } else {
+                if(!val('t_name')) return alert("يرجى ملء الاسم");
+                s = { ...s, type: 'training', dept: currentDept, name: val('t_name'), level: val('t_level'), phone: val('t_phone'), time: val('t_time'), total: num('t_total'), paid: num('t_paid') };
+            }
+            s.logs.push(`تم التسجيل بتاريخ ${new Date().toLocaleDateString('ar-EG')}`);
+            s.logs.push(`تم دفع مقدم: ${s.paid} ج.م من أصل ${s.total} ج.م`);
+            
+            // Auto add to finance
+            finance.push({
+                id: Date.now(),
+                type: 'وارد',
+                amount: s.paid,
+                reason: `مقدم تسجيل طالب: ${s.name}`,
+                user: 'النظام',
+                dept: type === 'course' ? 'كورس' : s.dept,
+                date: new Date().toISOString()
+            });
+
+            students.push(s);
+            sync();
+            closeM(type === 'course' ? 'addCourseStudentModal' : 'addTrainingModal');
+            renderAll();
+        }
+
+        function payMonthlySub() {
+            const s = students.find(x => x.id === activeSID);
+            let amount = 0;
+            if(s.type === 'training') {
+                if(s.dept === 'الخدمات الصحية') amount = priceList.health;
+                else if(s.dept === 'تكنولوجيا') amount = priceList.tech;
+                else if(s.dept === 'مساحة وخرائط') amount = priceList.map;
+            } else {
+                amount = s.total / 2; // Default for course
+            }
+
+            if(confirm(`سيتم تسجيل دفع مبلغ ${amount} ج.م كاشتراك شهري للطالب. هل تريد المتابعة؟`)) {
+                s.paid += amount;
+                s.logs.unshift(`💰 دفع اشتراك شهري بقيمة ${amount} ج.م - التاريخ: ${new Date().toLocaleString('ar-EG')}`);
+                
+                finance.push({
+                    id: Date.now(),
+                    type: 'وارد',
+                    amount: amount,
+                    reason: `اشتراك شهري طالب: ${s.name}`,
+                    user: 'النظام',
+                    dept: s.type === 'course' ? 'كورس' : s.dept,
+                    date: new Date().toISOString()
+                });
+
+                sync();
+                openStudentDetail(activeSID);
+                renderAll();
+                alert("تم تسجيل الدفع وتحديث المتبقي تلقائياً");
+            }
+        }
+
+        function renderCourses() {
+            const circs = document.getElementById('courseCircles');
+            const list = document.getElementById('courseList');
+            circs.innerHTML = ''; list.innerHTML = '';
+            
+            const unique = [...new Set(students.filter(s => s.type === 'course').map(s => s.course))];
+            unique.forEach(c => {
+                const div = document.createElement('div');
+                div.className = "circle-item";
+                div.innerHTML = `<span class="font-bold text-sm">${c}</span><span class="text-xs">(${students.filter(s => s.course === c).length})</span>`;
+                div.onclick = () => renderCourseStudents(c);
+                circs.appendChild(div);
+            });
+        }
+
+        function renderCourseStudents(cName) {
+            const list = document.getElementById('courseList');
+            list.innerHTML = '';
+            students.filter(s => s.course === cName).forEach(s => {
+                const card = document.createElement('div');
+                card.className = "card-box border-r-4 border-blue-600 cursor-pointer";
+                card.onclick = () => openStudentDetail(s.id);
+                card.innerHTML = `
+                    <h4 class="font-bold text-right">${s.name}</h4>
+                    <p class="text-xs opacity-70 text-right">رقم ولي الأمر: ${s.phone}</p>
+                    <div class="flex justify-between mt-2 text-xs font-bold">
+                        <span class="${(s.total - s.paid) > 0 ? 'text-red-400' : 'text-green-400'}">المتبقي: ${s.total - s.paid} ج.م</span>
+                        <span class="text-blue-400">الحضور: ${s.attendance}</span>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function setTrainingDept(dept) {
+            currentDept = dept;
+            document.getElementById('deptHeader').classList.remove('hidden');
+            document.getElementById('currentDeptTitle').innerText = `إدارة قسم: ${dept}`;
+            renderTraining();
+        }
+
+        function renderTraining() {
+            if(!currentDept) return;
+            const list = document.getElementById('trainingStudentsList');
+            const search = val('deptSearch').toLowerCase();
+            const level = document.getElementById('levelFilter').value;
+            list.innerHTML = '';
+
+            students.filter(s => s.type === 'training' && s.dept === currentDept && 
+                (level === 'all' || s.level === level) &&
+                (s.name.toLowerCase().includes(search)))
+            .forEach(s => {
+                const div = document.createElement('div');
+                div.className = "card-box flex justify-between items-center cursor-pointer border-blue-900";
+                div.onclick = () => openStudentDetail(s.id);
+                div.innerHTML = `
+                    <div class="text-right">
+                        <h4 class="font-bold">${s.name}</h4>
+                        <p class="text-[10px] opacity-70">فرقة: ${s.level} | متبقي: ${s.total - s.paid}</p>
+                    </div>
+                    <div class="text-left text-xs text-blue-400">المحاضرات: ${s.attendance}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function openStudentDetail(id) {
+            activeSID = id;
+            const s = students.find(x => x.id === id);
+            if(!s) return;
+            document.getElementById('detName').innerText = s.name;
+            document.getElementById('detSub').innerText = s.type === 'course' ? `كورس: ${s.course}` : `${s.dept} - الفرقة ${s.level}`;
+            document.getElementById('regDate').innerText = new Date(s.id).toLocaleDateString('ar-EG');
+            document.getElementById('pPhone').innerText = s.phone;
+            
+            // Financial Data Update
+            document.getElementById('finTotal').innerText = s.total || 0;
+            document.getElementById('finPaid').innerText = s.paid || 0;
+            document.getElementById('finRest').innerText = (s.total || 0) - (s.paid || 0);
+
+            const logBox = document.getElementById('detLogs');
+            logBox.innerHTML = s.logs.map(l => `<div class="p-2 border-b border-gray-800 text-white">${l}</div>`).join('');
+            openM('studentDetailModal');
+        }
+
+        function markAttend() {
+            const s = students.find(x => x.id === activeSID);
+            s.attendance++;
+            s.logs.unshift(`✅ حضور يوم ${new Date().toLocaleString('ar-EG')}`);
+            sync(); openStudentDetail(activeSID); renderAll();
+        }
+
+        function openExamTab() {
+            const s = students.find(x => x.id === activeSID);
+            const score = prompt("أدخل درجة الامتحان:");
+            if(score !== null) {
+                const ex = { id: s.exams.length + 1, score, price: 50, date: new Date().toLocaleDateString('ar-EG') };
+                s.exams.push(ex);
+                s.logs.unshift(`📝 امتحان رقم ${ex.id}: الدرجة (${score}) - تاريخ ${ex.date}`);
+                sync(); openStudentDetail(activeSID);
+            }
+        }
+
+        function deleteS() {
+            if(confirm("هل أنت متأكد من حذف الطالب نهائياً من النظام؟")) {
+                students = students.filter(s => s.id !== activeSID);
+                sync(); 
+                closeM('studentDetailModal'); 
+                renderAll();
+                activeSID = null;
+            }
+        }
+
+        // Finance Logic
+        function saveFinance() {
+            if(!val('m_amount') || !val('m_reason')) return alert("أكمل البيانات المالية");
+            const entry = {
+                id: Date.now(),
+                type: val('m_type'),
+                amount: num('m_amount'),
+                reason: val('m_reason'),
+                user: val('m_user'),
+                dept: val('m_dept'),
+                level: val('m_level'),
+                date: new Date().toISOString()
+            };
+            finance.push(entry);
+            sync();
+            closeM('moneyModal');
+            if(!document.getElementById('finPanel').classList.contains('hidden')) showFin(finViewType);
+        }
+
+        function loginFin() {
+            if(val('finPass') === finPassword) {
+                document.getElementById('finAuth').classList.add('hidden');
+                document.getElementById('finPanel').classList.remove('hidden');
+                showFin('daily');
+            } else {
+                alert("كلمة المرور خاطئة");
+            }
+        }
+
+        function changeFinPass() {
+            const n = val('newFinPass');
+            if(n.length < 3) return alert("كلمة المرور قصيرة جداً");
+            finPassword = n;
+            sync();
+            alert("تم تغيير كلمة المرور بنجاح");
+            document.getElementById('newFinPass').value = '';
+        }
+
+        function showFin(type) {
+            finViewType = type;
+            const records = document.getElementById('finRecords');
+            records.innerHTML = '';
+            document.getElementById('finTitle').innerText = `سجلات المالية - ${type}`;
+            
+            finance.forEach(f => {
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border-r-4 ${f.type === 'وارد' ? 'border-green-500 bg-green-950/30' : 'border-red-500 bg-red-950/30'}`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2 text-right">
+                        <span class="font-bold text-lg text-white">${f.amount} ج.م</span>
+                        <span class="text-[10px] px-2 py-1 rounded bg-black/50 border border-gray-700">${f.type}</span>
+                    </div>
+                    <p class="text-sm font-bold mb-1 text-right text-blue-300">${f.reason}</p>
+                    <div class="text-[10px] text-gray-400 flex justify-between mt-2">
+                        <span>المسؤول: ${f.user}</span>
+                        <span>${f.dept}</span>
+                    </div>
+                `;
+                records.appendChild(card);
+            });
+        }
+
+        // Staff Logic
+        function saveStaff() {
+            if(!val('st_name')) return alert("أدخل اسم الموظف");
+            staff.push({ id: Date.now(), name: val('st_name'), in: val('st_in'), out: val('st_out'), logs: [] });
+            sync(); closeM('addStaffModal'); renderStaff();
+        }
+
+        function renderStaff() {
+            const list = document.getElementById('staffList');
+            list.innerHTML = '';
+            staff.forEach(s => {
+                const div = document.createElement('div');
+                div.className = "card-box flex justify-between items-center";
+                div.innerHTML = `
+                    <div class="text-right"><h4 class="font-bold">${s.name}</h4><p class="text-xs text-gray-400">الموعد: ${s.in || '--'} إلى ${s.out || '--'}</p></div>
+                    <div class="flex gap-2">
+                        <button onclick="logStaff(${s.id}, 'حضور')" class="bg-green-600 text-white text-xs px-3 py-1 rounded font-bold">حضور</button>
+                        <button onclick="logStaff(${s.id}, 'انصراف')" class="bg-red-600 text-white text-xs px-3 py-1 rounded font-bold">انصراف</button>
+                        <button onclick="delStaff(${s.id})" class="text-gray-500 hover:text-red-500 p-1"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function logStaff(id, type) {
+            const s = staff.find(x => x.id === id);
+            s.logs.push(`${type} في ${new Date().toLocaleString('ar-EG')}`);
+            alert(`تم تسجيل ${type} للموظف: ${s.name}`);
+            sync();
+        }
+
+        function delStaff(id) {
+            if(confirm("حذف الموظف؟")) {
+                staff = staff.filter(s => s.id !== id);
+                sync(); renderStaff();
+            }
+        }
+
+        // Search
+        function runGlobalSearch() {
+            const q = val('globalSearch').toLowerCase();
+            const res = document.getElementById('searchResult');
+            res.innerHTML = '';
+            if(q.length < 2) return;
+            students.filter(s => s.name.toLowerCase().includes(q) || s.phone.includes(q)).forEach(s => {
+                const div = document.createElement('div');
+                div.className = "card-box border-l-4 border-blue-500 cursor-pointer";
+                div.onclick = () => openStudentDetail(s.id);
+                div.innerHTML = `<h4 class="font-bold text-right">${s.name}</h4><p class="text-xs text-right opacity-60">${s.type === 'course' ? s.course : s.dept}</p>`;
+                res.appendChild(div);
+            });
+        }
+
+        // PDF Exports
+        function exportStudentPDF() {
+            const s = students.find(x => x.id === activeSID);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text(`C.B.F Student Report: ${s.name}`, 10, 20);
+            doc.text(`Total: ${s.total} | Paid: ${s.paid} | Rest: ${s.total - s.paid}`, 10, 30);
+            const logsData = s.logs.map(l => [l]);
+            doc.autoTable({ head: [['Activities']], body: logsData, startY: 40 });
+            doc.save(`Report_${s.name}.pdf`);
+        }
+
+        function exportFinPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text(`Finance Report - ${finViewType}`, 10, 15);
+            const data = finance.map(f => [f.amount, f.type, f.reason, f.dept]);
+            doc.autoTable({ head: [['Amount', 'Type', 'Reason', 'Dept']], body: data, startY: 25 });
+            doc.save(`Finance_${finViewType}.pdf`);
+        }
+
+        function exportDeptPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text(`Dept Report: ${currentDept}`, 10, 15);
+            const data = students.filter(s => s.dept === currentDept).map(s => [s.name, s.level, s.attendance, s.total - s.paid]);
+            doc.autoTable({ head: [['Name', 'Level', 'Attendance', 'Rest Amount']], body: data, startY: 25 });
+            doc.save(`Dept_${currentDept}.pdf`);
+        }
+
+        function exportLevelPDF() {
+            const level = val('levelFilter');
+            if(level === 'all') return alert("اختر فرقة محددة");
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text(`Level ${level} Report - ${currentDept}`, 10, 15);
+            const data = students.filter(s => s.dept === currentDept && s.level === level).map(s => [s.name, s.phone, s.total - s.paid]);
+            doc.autoTable({ head: [['Name', 'Phone', 'Rest']], body: data, startY: 25 });
+            doc.save(`Level_${level}.pdf`);
+        }
+        
+        function exportStaffReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Staff Attendance Report", 10, 15);
+            const data = staff.map(s => [s.name, s.in, s.out]);
+            doc.autoTable({ head: [['Name', 'Shift Start', 'Shift End']], body: data, startY: 25 });
+            doc.save("Staff_Report.pdf");
+        }
+
+        function toggleMode() { document.body.classList.toggle('light-mode'); }
+    </script>
+</body>
+</html>
